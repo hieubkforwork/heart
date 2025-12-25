@@ -4,7 +4,8 @@
     <title>Heart for NH</title>
     <meta charset="utf-8" />
     <style>
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         overflow: hidden;
@@ -37,7 +38,8 @@
       }
 
       @keyframes glow {
-        0%, 100% {
+        0%,
+        100% {
           text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff8099, 0 0 30px #ff4d6d;
           opacity: 0.8;
         }
@@ -55,6 +57,26 @@
     <canvas id="draw-layer"></canvas>
 
     <script>
+      const MUSIC_URL = "./audio.mp3";
+      let bgMusic = new Audio(MUSIC_URL);
+      bgMusic.loop = true;
+      bgMusic.volume = 1.0;
+      bgMusic.muted = true;
+
+      // autoplay im lặng
+      bgMusic.play().catch(() => {});
+      const unmuteSmooth = () => {
+        bgMusic.muted = false;
+        bgMusic.volume = 0;
+
+        const fade = setInterval(() => {
+          bgMusic.volume = Math.min(bgMusic.volume + 0.05, 0.8);
+          if (bgMusic.volume >= 0.8) clearInterval(fade);
+        }, 60);
+      };
+
+      window.addEventListener("mousemove", unmuteSmooth, { once: true });
+      window.addEventListener("touchstart", unmuteSmooth, { once: true });
       const canvas = document.getElementById("heart");
       const ctx = canvas.getContext("2d");
 
@@ -67,7 +89,8 @@
       let drawing = false;
       let mouseX = width / 2;
       let mouseY = height / 2;
-      let prevX = 0, prevY = 0;
+      let prevX = 0,
+        prevY = 0;
 
       // Lưu các bước vẽ để undo
       const history = [];
@@ -114,7 +137,7 @@
 
       click = 1;
       document.addEventListener("mousedown", (e) => {
-       click = 1.2;
+        click = 1.2;
         if (e.button === 0) {
           saveState(); // Lưu trước khi bắt đầu vẽ
           drawing = true;
@@ -127,7 +150,7 @@
       });
 
       document.addEventListener("mouseup", () => {
-        click  = 1;
+        click = 1;
         drawing = false;
       });
 
@@ -201,50 +224,48 @@
       let time = 0;
 
       const loop = () => {
-          const n = -Math.cos(time);
-          pulse((1 + n) * 0.5, (1 + n) * 0.5);
-          time +=
-            (Math.sin(time) < 0 ? 9 : n > 0.8 ? 0.2 : 1) * config.timeDelta;
+        const n = -Math.cos(time);
+        pulse((1 + n) * 0.5, (1 + n) * 0.5);
+        time += (Math.sin(time) < 0 ? 9 : n > 0.8 ? 0.2 : 1) * config.timeDelta;
 
-          ctx.fillStyle = "rgba(0,0,0,0.1)";
-          ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(0,0,0,0.1)";
+        ctx.fillRect(0, 0, width, height);
 
-          for (let i = e.length; i--; ) {
-            const u = e[i];
-            const q = targetPoints[u.q];
-            const dx = u.trace[0].x - q[0];
-            const dy = u.trace[0].y - q[1];
-            const length = Math.sqrt(dx * dx + dy * dy);
+        for (let i = e.length; i--; ) {
+          const u = e[i];
+          const q = targetPoints[u.q];
+          const dx = u.trace[0].x - q[0];
+          const dy = u.trace[0].y - q[1];
+          const length = Math.sqrt(dx * dx + dy * dy);
 
-            if (10 > length) {
-              if (0.95 < rand()) u.q = ~~(rand() * heartPointsCount);
-              else {
-                if (0.99 < rand()) u.D *= -1;
-                u.q += u.D;
-                u.q %= heartPointsCount;
-                if (u.q < 0) u.q += heartPointsCount;
-              }
+          if (10 > length) {
+            if (0.95 < rand()) u.q = ~~(rand() * heartPointsCount);
+            else {
+              if (0.99 < rand()) u.D *= -1;
+              u.q += u.D;
+              u.q %= heartPointsCount;
+              if (u.q < 0) u.q += heartPointsCount;
             }
-
-            u.vx += (-dx / length) * u.speed;
-            u.vy += (-dy / length) * u.speed;
-            u.trace[0].x += u.vx;
-            u.trace[0].y += u.vy;
-            u.vx *= u.force;
-            u.vy *= u.force;
-
-            for (let k = 0; k < u.trace.length - 1; ) {
-              const T = u.trace[k];
-              const N = u.trace[++k];
-              N.x -= config.traceK * (N.x - T.x);
-              N.y -= config.traceK * (N.y - T.y);
-            }
-
-            ctx.fillStyle = u.f;
-            for (let k = 0; k < u.trace.length; k++)
-              ctx.fillRect(u.trace[k].x, u.trace[k].y, 1, 1);
           }
-        
+
+          u.vx += (-dx / length) * u.speed;
+          u.vy += (-dy / length) * u.speed;
+          u.trace[0].x += u.vx;
+          u.trace[0].y += u.vy;
+          u.vx *= u.force;
+          u.vy *= u.force;
+
+          for (let k = 0; k < u.trace.length - 1; ) {
+            const T = u.trace[k];
+            const N = u.trace[++k];
+            N.x -= config.traceK * (N.x - T.x);
+            N.y -= config.traceK * (N.y - T.y);
+          }
+
+          ctx.fillStyle = u.f;
+          for (let k = 0; k < u.trace.length; k++)
+            ctx.fillRect(u.trace[k].x, u.trace[k].y, 1, 1);
+        }
 
         requestAnimationFrame(loop);
       };
